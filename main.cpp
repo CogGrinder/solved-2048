@@ -67,38 +67,61 @@ struct Coord {
  * i and j are coordinates for tile to shift to (overwrites tile)
  * in other words: removes element in row or column and shifts all others,
  * adding 0 on the end
+ * 
+ * @returns:
+ *  bool: indicates wether non-zero values were shifted, used to test if move was legal
  */
 
-inline void shift_up(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_up(int i, int j, int rows, int cols, state_type& gamestate){
+    bool moved_non_zero_tile = false;
+    int8_t new_value;
     for (int i_rewrite = i; i_rewrite < rows-1; i_rewrite++) {
-        gamestate[i_rewrite][j] = gamestate[i_rewrite+1][j];
+        new_value = gamestate[i_rewrite+1][j];
+        gamestate[i_rewrite][j] = new_value;
+        if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
     gamestate[rows-1][j] = 0;
+    return moved_non_zero_tile;
 }
 
-inline void shift_down(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_down(int i, int j, int rows, int cols, state_type& gamestate){
+    bool moved_non_zero_tile = false;
+    int8_t new_value;
     for (int i_rewrite = i; i_rewrite > 0; i_rewrite--) {
-        gamestate[i_rewrite][j] = gamestate[i_rewrite-1][j];
+        new_value = gamestate[i_rewrite-1][j];
+        gamestate[i_rewrite][j] = new_value;
+        if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
     gamestate[0][j] = 0;
+    return moved_non_zero_tile;
 }
 
-inline void shift_left(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_left(int i, int j, int rows, int cols, state_type& gamestate){
+    bool moved_non_zero_tile = false;
+    int8_t new_value;
     for (int j_rewrite = j; j_rewrite < cols-1; j_rewrite++) {
-        gamestate[i][j_rewrite] = gamestate[i][j_rewrite+1];
+        new_value = gamestate[i][j_rewrite+1];
+        gamestate[i][j_rewrite] = new_value;
+        if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
     gamestate[i][cols-1] = 0;
+    return moved_non_zero_tile;
 }
 
-inline void shift_right(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_right(int i, int j, int rows, int cols, state_type& gamestate){
+    bool moved_non_zero_tile = false;
+    int8_t new_value;
     for (int j_rewrite = j; j_rewrite > 0; j_rewrite--) {
-        gamestate[i][j_rewrite] = gamestate[i][j_rewrite-1];
+        new_value = gamestate[i][j_rewrite-1];
+        gamestate[i][j_rewrite] = new_value;
+        if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
     gamestate[i][0] = 0;
+    return moved_non_zero_tile;
 }
 
 bool player_move(int rows, int cols, state_type& gamestate, action_type a){
@@ -138,9 +161,8 @@ bool player_move(int rows, int cols, state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    shift_up(i, j, rows, cols, gamestate);
+                    if (shift_up(i, j, rows, cols, gamestate)) is_valid_move=true;
                     number_of_zeros++;
-                    is_valid_move=true;
                 }
             }
         }
@@ -174,9 +196,8 @@ bool player_move(int rows, int cols, state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    shift_down(i, j, rows, cols, gamestate);
+                    if (shift_down(i, j, rows, cols, gamestate)) is_valid_move=true;
                     number_of_zeros++;
-                    is_valid_move=true;
                 }
             }
         }
@@ -210,9 +231,8 @@ bool player_move(int rows, int cols, state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    shift_left(i, j, rows, cols, gamestate);
+                    if (shift_left(i, j, rows, cols, gamestate)) is_valid_move=true;
                     number_of_zeros++;
-                    is_valid_move=true;
                 }
             }
         }
@@ -246,9 +266,8 @@ bool player_move(int rows, int cols, state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    shift_right(i, j, rows, cols, gamestate);
+                    if (shift_right(i, j, rows, cols, gamestate)) is_valid_move=true;
                     number_of_zeros++;
-                    is_valid_move=true;
                 }
             }
         }
@@ -262,26 +281,33 @@ bool player_move(int rows, int cols, state_type& gamestate, action_type a){
     
 }
 
-bool random_nature_move(int rows, int cols, state_type& gamestate){
-    bool is_valid_move = false;
+std::vector<Coord> all_nature_moves(int rows, int cols, const state_type& gamestate) {
 
-    std::vector<Coord> list_of_empty_squares;
+    std::vector<Coord> list_of_empty_tiles;
     for (int i = 0; i < rows; i++)
     {
         for (int j = 0; j < cols; j++)
         {
         if (gamestate[i][j]==0)
         {
-            list_of_empty_squares.push_back({i,j});
-            is_valid_move = true;
+            list_of_empty_tiles.push_back({i,j});
         }        
         }
     }
 
+    return list_of_empty_tiles;
+}
+
+bool random_nature_move(int rows, int cols, state_type& gamestate){
+    std::vector<Coord> list_of_empty_tiles = all_nature_moves(rows, cols, gamestate);
+    // Nature move is valid if there are still available tiles
+    bool is_valid_move = list_of_empty_tiles.size()>0;
+    
+
     if (is_valid_move)
     {
-        srand((unsigned) time(NULL) + list_of_empty_squares.size()); 
-        Coord chosen_square = list_of_empty_squares[rand()%list_of_empty_squares.size()];
+        srand((unsigned) time(NULL) + list_of_empty_tiles.size()); 
+        Coord chosen_square = list_of_empty_tiles[rand()%list_of_empty_tiles.size()];
         int8_t new_value = rand()%2 + 1;
 
         gamestate[chosen_square.i][chosen_square.j] = new_value;
@@ -367,7 +393,8 @@ int main(int argc, char *argv[]) {
 
     /* TESTING : game playing for rule testing */
 
-    // Testing player_move
+    // Testing player_move:
+    // Testing fusion and movement
     {
         {
             int rows = 1;
@@ -444,7 +471,29 @@ int main(int argc, char *argv[]) {
             assert((gamestate==changed_gamestate_assert));
         }
     }
-    
+    // Testing move validation
+    {
+        {
+            int rows = 4;
+            int cols = 4;
+
+            state_type gamestate = 
+            {
+                { 3, 4, 4, 4 },
+                { 1, 3, 2, 1 },
+                { 2, 0, 1, 0 },
+                { 0, 0, 0, 0 }
+            };
+
+            // display_gamestate(rows,cols,gamestate);
+            bool is_valid_move = player_move(rows,cols,gamestate,Up);
+            // display_gamestate(rows,cols,gamestate);
+
+            assert ((is_valid_move==false));
+        }
+                    
+    }
+
     // Testing random_nature_move
     if (false) {
         {
