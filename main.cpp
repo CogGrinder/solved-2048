@@ -399,10 +399,11 @@ void print_gamestate(state_type& gamestate) {
     std::cout << std::string(3*cols,'_') << std::endl;
     for (int i = 0; i < rows; i++)
     {
-        if (display_as_cpp_vectors) {
-            std::cout << "\n{";
-        } else {
+        if (i>0) {
             std::cout << "\n";
+        }
+        if (display_as_cpp_vectors) {
+            std::cout << "{";
         }
         for (int j = 0; j < cols; j++)
         {
@@ -634,24 +635,22 @@ int main(int argc, char *argv[]) {
     }
 
     // Testing random_nature_move
-    if (false) {
+    {
+        int rows = 5;
+        int cols = 5;
+
+        state_type gamestate = 
         {
-            int rows = 5;
-            int cols = 5;
+            { 0, 0, 3, 3, 2},
+            { 0, 1, 1, 1, 2},
+            { 3, 1, 1, 1, 4},
+            { 4, 0, 0, 3, 5},
+            { 3, 4, 4, 4, 4}
+        };
 
-            state_type gamestate = 
-            {
-                { 0, 0, 3, 3, 2},
-                { 0, 1, 1, 1, 2},
-                { 3, 1, 1, 1, 4},
-                { 4, 0, 0, 3, 5},
-                { 3, 4, 4, 4, 4}
-            };
-
+        PRINT_GAMESTATE(gamestate);
+        while (random_nature_move(rows,cols,gamestate)) {
             PRINT_GAMESTATE(gamestate);
-            while (random_nature_move(rows,cols,gamestate)) {
-                PRINT_GAMESTATE(gamestate);
-            }
         }
     }
 
@@ -662,7 +661,16 @@ int main(int argc, char *argv[]) {
     int8_t winning_objective = 5; // power of winning objective
     int total_combinations = pow((winning_objective+1), rows*cols);
 
-    int T = pow(2,winning_objective-1)/2*rows*cols; // TODO fix this
+    // if, on the turn T-1:
+    // - half of the grid + 1 is filled with winning_objective - 1
+    // - the other half was first filled with winning_objective - 2
+    // then game is winnable in no more than T turns
+    // in the worst case, this happens with only Nature moves of 2^1,
+    // so T = grid total / 2 + 1 suffices
+
+    int halfgrid = rows*cols /2;
+    int worse_case_total = pow(2,winning_objective-1)*(halfgrid + 1) + pow(2,winning_objective-2)* (rows*cols - halfgrid - 1);
+    int T = ( worse_case_total )/2 + 1;
 
     if (argc>1) {
         T = atoi(argv[1]);
