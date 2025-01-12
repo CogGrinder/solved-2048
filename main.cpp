@@ -390,24 +390,6 @@ reward_type r(int t, state_type s, action_type a) {
     return 0;
 }
 
-// transition_probability is actually just :
-// 1 - look at player move
-// 2 - look at nature move
-// double transition_probability(state_type s, state_type s_prime, action_type a) {
-//     state_type temp_player_move_state(s);
-//     if (player_move(temp_player_move_state,a)) {
-//         std::vector<Coord> nature = all_nature_moves(temp_player_move_state);
-//         for (int i = 0; i < nature.size(); i++)
-//         {
-//             state_type nature_move_state(temp_player_move_state);
-//             nature_move_state[nature[i].i,nature[i].j]
-//         }
-        
-//     } else {
-//         return 0;
-//     }
-// }
-
 void print_gamestate(state_type& gamestate) {
     int rows = gamestate.size();
     int cols = gamestate[0].size();
@@ -705,15 +687,6 @@ int main(int argc, char *argv[]) {
         hashed_state++;
     }
 
-    // DEBUG print
-    // for (hashed_state = 0; hashed_state < total_combinations; hashed_state++)
-    // {
-    //     std::cout << std::setw(2) << value[hashed_state]; // << std::endl;
-    //     // hash_to_gamestate(winning_objective, hashed_state, temp, rows, cols);
-    //     // PRINT_GAMESTATE(temp);
-    // }
-
-
     // empty policy that will be filled with policy_t
     std::vector<std::vector<action_type>> policy;
     
@@ -735,12 +708,12 @@ int main(int argc, char *argv[]) {
         state_type temp(rows, std::vector<int8_t>(cols));
         state_type temp_prime(rows, std::vector<int8_t>(cols));
 
-        // TODO: removed hashed_state 0
+        // hashed_state 0 is an empty board. It does not have any valid moves for player therefore game ends
         policy_t[0] = None;
         new_value[0] = 0;
 
 
-        // go through all possible positions for tiles
+        // go through all possible positions for tiles, except 0 because you get Up as optimal move
         for (int64_t hashed_state = 1; hashed_state < total_combinations; hashed_state++) {
             // generate the gamestate, with only the decided empty tiles, all others empty
             hash_to_gamestate(winning_objective, hashed_state, temp, rows, cols);
@@ -764,42 +737,33 @@ int main(int argc, char *argv[]) {
                     bellman_expression = value[hashed_state];
                 } else {
                     // generate all Nature moves from Player move
-                    std::vector<int64_t> valid_nature_move_states;
-                    state_type temp_player_move_state(temp);
+                    state_type temp_player_move(temp);
                     
-                    bool valid_move = player_move(temp_player_move_state,action_type(a));
+                    bool valid_move = player_move(temp_player_move,action_type(a));
                     
                     if (valid_move) {
-                        std::vector<Coord> nature = all_nature_moves(temp_player_move_state);
+                        std::vector<Coord> nature = all_nature_moves(temp_player_move);
                         for (int i = 0; i < nature.size(); i++)
                         {
-                            state_type nature_move_state(temp_player_move_state);
-                            // Nature generates a 2=2^1
-                            nature_move_state[nature[i].i][nature[i].j] = 1;
-                            valid_nature_move_states.push_back(gamestate_to_hash(winning_objective,nature_move_state, rows, cols));
-                            // Nature generates a 2=2^1
-                            nature_move_state[nature[i].i][nature[i].j] = 2;
-                            valid_nature_move_states.push_back(gamestate_to_hash(winning_objective,nature_move_state, rows, cols));
+                            state_type nature_move(temp_player_move);
+                            
+                            // Nature generates a 2=2^1 tile
+                            nature_move[nature[i].i][nature[i].j] = 1;
+                            int64_t hashed_state_prime_2 = gamestate_to_hash(winning_objective,nature_move, rows, cols);                            
+
+                            // Nature generates a 4=2^2 tile
+                            nature_move[nature[i].i][nature[i].j] = 2;
+                            int64_t hashed_state_prime_4 = gamestate_to_hash(winning_objective,nature_move, rows, cols);
+
+                            // transition_probability is actually just :
+                            // 1 - look at player move
+                            // 2 - look at nature move
+                            bellman_expression += value[hashed_state_prime_2] * 1.0/(nature.size()*2);
+                            bellman_expression += value[hashed_state_prime_4] * 1.0/(nature.size()*2);
                         }
-                    }
-                    
-                    if (valid_nature_move_states.size() > 0) {
-
-
-                        // for (int64_t hashed_state_prime = 0; hashed_state_prime < total_combinations; hashed_state_prime++)
-                        for (auto hashed_state_prime = valid_nature_move_states.begin(); hashed_state_prime != valid_nature_move_states.end(); hashed_state_prime++)
-                        {                    
-                            if (value[*hashed_state_prime] > 0) {
-
-                                // transition_probability is actually just :
-                                // 1 - look at player move
-                                // 2 - look at nature move
-
-                                // probability
-                                bellman_expression += value[*hashed_state_prime] * 1.0/valid_nature_move_states.size();
-                            }
-                        }
-                        
+                    } else {
+                        // ignore this move
+                        bellman_expression = -1;
                     }
                 }
 
@@ -835,34 +799,12 @@ int main(int argc, char *argv[]) {
     if (interactive_game) {
 
         while (true){ //play until user quits
+        std::cout << "To play, use w, a, s and d as directions Up, Left, Down, Right\n";
+        std::cout << "Enter to start: ";
+        std::getchar();
 
         // initialise to empty game
         state_type gamestate(rows, std::vector<int8_t>(cols)); // DEBUG: comment this for testing gamestates
-        
-        /* DEBUG: GAMESTATES TESTING */
-
-        // state_type gamestate = 
-        //     {
-        //         { 2, 1, 3 },
-        //         { 2, 0, 3 }
-        //     };
-        // state_type gamestate = 
-        //     {
-        //         { 2, 1, 3 },
-        //         { 3, 3, 1 }
-        //     };
-        // state_type gamestate = 
-        //     {
-        //         { 1, 1, 3 },
-        //         { 2, 1, 2 }
-        //     };
-
-        // // use this with (2,2) policy and objective 4
-        // state_type gamestate = 
-        // {
-        //     { 3, 3 },
-        //     { 2, 2 }
-        // };
 
         action_type optimal = Up;
         
@@ -875,7 +817,7 @@ int main(int argc, char *argv[]) {
             int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
             std::cout << "Value= " << value[hash] << std::endl;
             optimal = policy[0][hash];
-
+            std::cout << "Optimal policy= ";
             print_move(optimal);
 
             action_type a = None;
@@ -906,7 +848,7 @@ int main(int argc, char *argv[]) {
             }
         }
         
-        // while (random_nature_move(rows,cols,gamestate)); // DEBUG: uncomment for testing gamestates
+        // while (random_nature_move(rows,cols,gamestate) && optimal!=None); // DEBUG: uncomment for testing gamestates
         }
     }
 
