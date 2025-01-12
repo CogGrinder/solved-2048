@@ -7,6 +7,7 @@
 #include <bitset>
 
 #include <cassert>
+#include <chrono>
 
 // DEBUG macros
 
@@ -473,7 +474,7 @@ inline int64_t gamestate_to_hash(int winning_objective, state_type& gamestate, i
     return hash;
 }
 
-int main(int argc, char *argv[]) {
+void test() {
 
     /* TESTING : game playing for rule testing */
 
@@ -653,31 +654,11 @@ int main(int argc, char *argv[]) {
             PRINT_GAMESTATE(gamestate);
         }
     }
+}
 
-
-
-    int rows = 2;
-    int cols = 3;
-    int8_t winning_objective = 5; // power of winning objective
+inline void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &value, int rows, int cols, int winning_objective, int T) {
     int total_combinations = pow((winning_objective+1), rows*cols);
-
-    // if, on the turn T-1:
-    // - half of the grid + 1 is filled with winning_objective - 1
-    // - the other half was first filled with winning_objective - 2
-    // then game is winnable in no more than T turns
-    // in the worst case, this happens with only Nature moves of 2^1,
-    // so T = grid total / 2 + 1 suffices
-
-    int halfgrid = rows*cols /2;
-    int worse_case_total = pow(2,winning_objective-1)*(halfgrid + 1) + pow(2,winning_objective-2)* (rows*cols - halfgrid - 1);
-    int T = ( worse_case_total )/2 + 1;
-
-    if (argc>1) {
-        T = atoi(argv[1]);
-    }
-
     PRINT(total_combinations);
-    std::vector<reward_type> value(total_combinations);
 
     /* INITIALISE VALUE */
     // go through all possible positions for tiles
@@ -694,9 +675,6 @@ int main(int argc, char *argv[]) {
         // go to the next hash
         hashed_state++;
     }
-
-    // empty policy that will be filled with policy_t
-    std::vector<std::vector<action_type>> policy;
     
     //sum of rewards over all actions - average gain
     // reward_type* value_at_previous_time = final_time_reward(state_size); //initialise to final gain
@@ -709,15 +687,13 @@ int main(int argc, char *argv[]) {
     {
         std::cout << "Time: " << time << std::endl;
 
-        // Write new fixed time t=time policy in policy
-        // Policy will be inserted at index 0 of list 
-        std::vector<action_type> policy_t(total_combinations);
+        // policy will be rewritten
         
         state_type temp(rows, std::vector<int8_t>(cols));
         state_type temp_prime(rows, std::vector<int8_t>(cols));
 
         // hashed_state 0 is an empty board. It does not have any valid moves for player therefore game ends
-        policy_t[0] = None;
+        policy[0] = None;
         new_value[0] = 0;
 
 
@@ -727,8 +703,8 @@ int main(int argc, char *argv[]) {
             hash_to_gamestate(winning_objective, hashed_state, temp, rows, cols);
             PRINT_GAMESTATE(temp); // DEBUG        
 
-            //pointer to best action
-            policy_t[hashed_state] = None;
+            //default
+            policy[hashed_state] = None;
                         
             reward_type max_bellman_expression = -1; //initialise max to -1
             action_type argmax = None;
@@ -785,20 +761,61 @@ int main(int argc, char *argv[]) {
             // max_bellman_expression is done, update value and policy
             new_value[hashed_state] = max_bellman_expression;
             PRINT(max_bellman_expression);
-            policy_t[hashed_state] = argmax;
+            policy[hashed_state] = argmax;
             // PRINT(argmax);
             PRINT_MOVE(argmax);
 
         }
-        
-        // add policy_t to policy
-        policy.insert(policy.begin(), policy_t);
 
         // exchange pointers to value and new_value
         value.swap(new_value);
     }
-    
+}
 
+int main(int argc, char *argv[]) {
+    #ifdef DEBUG
+    test();
+    #endif
+
+    int rows = 2;
+    int cols = 3;
+    int8_t winning_objective = 5; // power of winning objective
+
+    // if, on the turn T-1:
+    // - half of the grid + 1 is filled with winning_objective - 1
+    // - the other half was first filled with winning_objective - 2
+    // then game is winnable in no more than T turns
+    // in the worst case, this happens with only Nature moves of 2^1,
+    // so T = grid total / 2 + 1 suffices
+
+    int halfgrid = rows*cols /2;
+    int worse_case_total = pow(2,winning_objective-1)*(halfgrid + 1) + pow(2,winning_objective-2)* (rows*cols - halfgrid - 1);
+    int T = ( worse_case_total )/2 + 1;
+
+    // user entered T
+    if (argc>1) {
+        T = atoi(argv[1]);
+    }
+
+    std::cout << "solved-2048 by Vincent Meduski" << std::endl;
+    std::cout << "Rows= " << rows << std::endl;
+    std::cout << "Columns= " << cols << std::endl;
+    std::cout << "Time horizon= " << std::setw(2) << T << std::endl;
+    std::cout << "Objective= " << std::setw(2) << ( 2 << winning_objective-1 )<< std::endl;
+    std::cout << "Executing backwards induction for optimal policy..." << std::endl;
+
+    // empty policy that will be filled with policy_t
+    int total_combinations = pow((winning_objective+1), rows*cols);
+    std::vector<action_type> policy(total_combinations);
+    std::vector<reward_type> value(total_combinations);
+    
+    auto start = std::chrono::high_resolution_clock::now();
+    optimal_policy(policy, value, rows, cols, winning_objective, T);
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    std::cout << "Execution time= " << duration.count()*pow(10,-6) << "s" << std::endl;
 
     // a game simulation with Nature player
     // it can be played by user or by optimal player, computed above
@@ -813,7 +830,7 @@ int main(int argc, char *argv[]) {
 
         // initialise to empty game
         state_type gamestate(rows, std::vector<int8_t>(cols)); // DEBUG: comment this for testing gamestates
-
+        
         action_type optimal = Up;
         
         // at each iteration make Nature move
@@ -824,7 +841,7 @@ int main(int argc, char *argv[]) {
             print_gamestate(gamestate);
             int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
             std::cout << "Value= " << value[hash] << std::endl;
-            optimal = policy[0][hash];
+            optimal = policy[hash];
             std::cout << "Optimal policy= ";
             print_move(optimal);
 
@@ -856,6 +873,9 @@ int main(int argc, char *argv[]) {
             }
         }
         
+        int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
+        std::cout << "\nGame End.\nReward= " <<value[hash] << "\n" << std::endl;
+
         // while (random_nature_move(rows,cols,gamestate) && optimal!=None); // DEBUG: uncomment for testing gamestates
         }
     }
