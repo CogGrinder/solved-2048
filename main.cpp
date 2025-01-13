@@ -792,10 +792,16 @@ int main(int argc, char *argv[]) {
     int worse_case_total = pow(2,winning_objective-1)*(halfgrid + 1) + pow(2,winning_objective-2)* (rows*cols - halfgrid - 1);
     int T = ( worse_case_total )/2 + 1;
 
-    // user entered T
+    // user entered winning_objective
     if (argc>1) {
-        T = atoi(argv[1]);
+        winning_objective = atoi(argv[1]);
     }
+
+    // user entered T
+    if (argc>2) {
+        T = atoi(argv[2]);
+    }
+
 
     std::cout << "solved-2048 by Vincent Meduski" << std::endl;
     std::cout << "Rows= " << rows << std::endl;
