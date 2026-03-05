@@ -13,7 +13,7 @@
 
 #ifdef DEBUG
 
-#define PRINT_TILE(x) std::cout << #x << "= " << std::setw(2) << ( 2 << x-1 )<< std::endl
+#define PRINT_TILE(x) std::cout << #x << "= " << std::setw(2) << ( 2 << (x-1) )<< std::endl
 #define PRINT(x) std::cout << #x << "= " << x << std::endl
 #define OK() std::cout << " OK at " << __LINE__ << std::endl
 #define PRINT_GAMESTATE(x) print_gamestate(x)
@@ -413,7 +413,7 @@ void print_gamestate(state_type& gamestate) {
                 if (j < cols-1) std::cout << ",";
             } else {
                 if (gamestate[i][j] != 0) {
-                    std::cout << std::setw(2) << ( 2 << gamestate[i][j] ) << " ";
+                    std::cout << std::setw(2) << ( 2 << (gamestate[i][j]-1) ) << " ";
                 } else {
                     std::cout << "   ";
                 }
@@ -820,7 +820,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Rows= " << rows << std::endl;
     std::cout << "Columns= " << cols << std::endl;
     std::cout << "Time horizon= " << std::setw(2) << T << std::endl;
-    std::cout << "Objective= " << std::setw(2) << ( 2 << winning_objective )<< std::endl;
+    std::cout << "Objective= " << std::setw(2) << ( 2 << (winning_objective-1) )<< std::endl;
     std::cout << "Executing backwards induction for optimal policy..." << std::endl;
 
     // empty policy that will be filled with policy_t
