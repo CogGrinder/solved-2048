@@ -63,282 +63,344 @@
 // Offhand idea 2: If we want a simpler test, make the goal variable and start less far from the end.
 
 
+// State class sketchout
+
+#include <vector>
+#include <cstdint>
+#include <assert.h>
+#include <optional>
+// #include "state.hpp"
 enum action_type { Up, Down, Left, Right, None};
 typedef std::vector<std::vector<int8_t>> state_type;
+// Next implementation:
 // typedef std::vector<int8_t> state_size_type;
 typedef double reward_type;
+
 
 struct Coord {
     int i;
     int j;
 };
 
-// compactifying function:
-// takes Move (Up, Down, Left, Right) // do i add None? 
-// eg Up: swipe up ie "compact" blocks upward until impact on top edge while prioritising top 2 blocks in case of 3 similar blocks
-
-// Question: return legal moves ? Or just modified gamestate ?
-// Since gamestate is small, just copy the gamestate and modify it
-
-
-/* shifting functions:
- * for use in algorithms
- * i and j are coordinates for tile to shift to (overwrites tile)
- * in other words: removes element in row or column and shifts all others,
- * adding 0 on the end
- * 
- * @returns:
- *  bool: indicates wether non-zero values were shifted, used to test if move was legal
- */
-
-inline bool shift_up(int i, int j, int rows, state_type& gamestate){
-    bool moved_non_zero_tile = false;
-    int8_t new_value;
-    for (int i_rewrite = i; i_rewrite < rows-1; i_rewrite++) {
-        new_value = gamestate[i_rewrite+1][j];
-        gamestate[i_rewrite][j] = new_value;
-        if (new_value!=0) moved_non_zero_tile = true;
-    }
-    // insert a 0 at the end
-    gamestate[rows-1][j] = 0;
-    return moved_non_zero_tile;
-}
-
-inline bool shift_down(int i, int j, state_type& gamestate){
-    bool moved_non_zero_tile = false;
-    int8_t new_value;
-    for (int i_rewrite = i; i_rewrite > 0; i_rewrite--) {
-        new_value = gamestate[i_rewrite-1][j];
-        gamestate[i_rewrite][j] = new_value;
-        if (new_value!=0) moved_non_zero_tile = true;
-    }
-    // insert a 0 at the end
-    gamestate[0][j] = 0;
-    return moved_non_zero_tile;
-}
-
-inline bool shift_left(int i, int j, int cols, state_type& gamestate){
-    bool moved_non_zero_tile = false;
-    int8_t new_value;
-    for (int j_rewrite = j; j_rewrite < cols-1; j_rewrite++) {
-        new_value = gamestate[i][j_rewrite+1];
-        gamestate[i][j_rewrite] = new_value;
-        if (new_value!=0) moved_non_zero_tile = true;
-    }
-    // insert a 0 at the end
-    gamestate[i][cols-1] = 0;
-    return moved_non_zero_tile;
-}
-
-inline bool shift_right(int i, int j, state_type& gamestate){
-    bool moved_non_zero_tile = false;
-    int8_t new_value;
-    for (int j_rewrite = j; j_rewrite > 0; j_rewrite--) {
-        new_value = gamestate[i][j_rewrite-1];
-        gamestate[i][j_rewrite] = new_value;
-        if (new_value!=0) moved_non_zero_tile = true;
-    }
-    // insert a 0 at the end
-    gamestate[i][0] = 0;
-    return moved_non_zero_tile;
-}
-
-// this part of a move is deterministic and is independent of Nature move
-// warning, modifies gamestate
-bool player_move(state_type& gamestate, action_type a){
-    int rows = gamestate.size();
-    int cols = gamestate[0].size();
-
-    bool is_valid_move = false;
-    switch (a)
-    {
-    case Up:
-        for (int j = 0; j < cols; j++)
-        {
-            // on each column, first check for holes
-            int i = 0;
-            int number_of_zeros = 0;
-            int8_t previous_non_zero_tile = 0;
-            int previous_non_zero_tile_index = -1;
-
-            // note: consecutive zeros may slow things down
-            while (i < rows && number_of_zeros < rows)
-            {
-                // shifts due to adding tiles and "gravity"
-                if (gamestate[i][j]!=0) {
-                    // check that previous tile was the same
-                    if (previous_non_zero_tile==gamestate[i][j]) {
-                        // add tiles together
-                        gamestate[previous_non_zero_tile_index][j]++;
-                        shift_up(i, j, rows, gamestate);
-                        // reset previous_non_zero_tile
-                        // (cannot add tiles to the same tile in the same turn)
-                        previous_non_zero_tile = 0;
-                        is_valid_move=true;
-                    } else {
-                        previous_non_zero_tile=gamestate[i][j];
-                        previous_non_zero_tile_index = i;
-                        // move to next tile
-                        i++;
-                    }
-                } else {
-                    // "gravity" shift on top of blank space
-                    if (shift_up(i, j, rows, gamestate)) is_valid_move=true;
-                    number_of_zeros++;
-                }
-            }
-        }
-        break;
-    case Down:
-        for (int j = 0; j < cols; j++)
-        {
-            // on each column, first check for holes
-            int i = rows-1;
-            int number_of_zeros = 0;
-            int8_t previous_non_zero_tile = 0;
-            int previous_non_zero_tile_index = -1;
-
-            // note: consecutive zeros may slow things down
-            while (i >= 0 && number_of_zeros < rows)
-            {
-                // shifts due to adding tiles and "gravity"
-                if (gamestate[i][j]!=0) {
-                    // check that previous tile was the same
-                    if (previous_non_zero_tile==gamestate[i][j]) {
-                        // add tiles together
-                        gamestate[previous_non_zero_tile_index][j]++;
-                        shift_down(i, j, gamestate);
-                        previous_non_zero_tile = 0;
-                        is_valid_move=true;
-                    } else {
-                        previous_non_zero_tile=gamestate[i][j];
-                        previous_non_zero_tile_index = i;
-                        // move to next tile
-                        i--;
-                    }
-                } else {
-                    // "gravity" shift on top of blank space
-                    if (shift_down(i, j, gamestate)) is_valid_move=true;
-                    number_of_zeros++;
-                }
-            }
-        }
-        break;
-    case Left:
-        for (int i = 0; i < rows; i++)
-        {
-            // on each column, first check for holes
-            int j = 0;
-            int number_of_zeros = 0;
-            int8_t previous_non_zero_tile = 0;
-            int previous_non_zero_tile_index = -1;
-
-            // note: consecutive zeros may slow things down
-            while (j < cols && number_of_zeros < cols)
-            {
-                // shifts due to adding tiles and "gravity"
-                if (gamestate[i][j]!=0) {
-                    // check that previous tile was the same
-                    if (previous_non_zero_tile==gamestate[i][j]) {
-                        // add tiles together
-                        gamestate[i][previous_non_zero_tile_index]++;
-                        shift_left(i, j, cols, gamestate);
-                        previous_non_zero_tile = 0;
-                        is_valid_move=true;
-                    } else {
-                        previous_non_zero_tile=gamestate[i][j];
-                        previous_non_zero_tile_index = j;
-                        // move to next tile
-                        j++;
-                    }
-                } else {
-                    // "gravity" shift on top of blank space
-                    if (shift_left(i, j, cols, gamestate)) is_valid_move=true;
-                    number_of_zeros++;
-                }
-            }
-        }
-        break;
-    case Right:
-        for (int i = 0; i < rows; i++)
-        {
-            // on each column, first check for holes
-            int j = cols-1;
-            int number_of_zeros = 0;
-            int8_t previous_non_zero_tile = 0;
-            int previous_non_zero_tile_index = -1;
-
-            // note: consecutive zeros may slow things down
-            while (j >= 0 && number_of_zeros < cols)
-            {
-                // shifts due to adding tiles and "gravity"
-                if (gamestate[i][j]!=0) {
-                    // check that previous tile was the same
-                    if (previous_non_zero_tile==gamestate[i][j]) {
-                        // add tiles together
-                        gamestate[i][previous_non_zero_tile_index]++;
-                        shift_right(i, j, gamestate);
-                        previous_non_zero_tile = 0;
-                        is_valid_move=true;
-                    } else {
-                        previous_non_zero_tile=gamestate[i][j];
-                        previous_non_zero_tile_index = j;
-                        // move to next tile
-                        j--;
-                    }
-                } else {
-                    // "gravity" shift on top of blank space
-                    if (shift_right(i, j, gamestate)) is_valid_move=true;
-                    number_of_zeros++;
-                }
-            }
-        }
-        break;
+class State {
+    /*
+    Class representing the game state on a board of dimensions ROWS x COLS,
+    where ROWS and COLS are compile-time constants defined in CMakeLists.txt.
+    */
+    public:
+        // Dimensions are part of the type's definition, not the object's instance
+        static constexpr int ROWS = BOARD_SIZE_ROWS; // 2
+        static constexpr int COLS = BOARD_SIZE_COLS; // 3
+        static constexpr int SIZE = BOARD_SIZE_ROWS * BOARD_SIZE_COLS;
     
-    default:
-        break;
-    }
+        
+        state_type data_;
 
-    return is_valid_move;
-    
-}
+        // Overloading () call for board_instance(i,j) access
+        // Getting with const
+        int8_t operator()(int r, int c) const {
+            return this->data_[r][c];
 
-std::vector<Coord> all_nature_moves(const state_type& gamestate) {
-    int rows = gamestate.size();
-    int cols = gamestate[0].size();
-    std::vector<Coord> list_of_empty_tiles;
-    for (int i = 0; i < rows; i++)
-    {
-        for (int j = 0; j < cols; j++)
-        {
-        if (gamestate[i][j]==0)
-        {
-            list_of_empty_tiles.push_back({i,j});
-        }        
+            // Next implementation:
+            // return data_[r * rows + c];
         }
-    }
+        // Setting with non-const reference
+        int8_t& operator()(int r, int c) {
+            return this->data_[r][c];
 
-    return list_of_empty_tiles;
-}
+            // Next implementation:
+            // return data_[r * rows + c];
+        }
 
-bool random_nature_move(state_type& gamestate){
-    std::vector<Coord> list_of_empty_tiles = all_nature_moves(gamestate);
-    // Nature move is valid if there are still available tiles
-    bool is_valid_move = list_of_empty_tiles.size()>0;
-    
+        State() : data_(State::ROWS, std::vector<int8_t>(State::COLS, 0)){}
+        // Next implementation:
+        // data_ = std::vector<int8_t>(State::ROWS * State::COLS, 0);
+        
+        State(const state_type& data) : data_(data) {}
 
-    if (is_valid_move)
-    {
-        srand((unsigned) time(NULL) + list_of_empty_tiles.size()); 
-        Coord chosen_square = list_of_empty_tiles[rand()%list_of_empty_tiles.size()];
-        int8_t new_value = rand()%2 + 1;
+    private:
 
-        gamestate[chosen_square.i][chosen_square.j] = new_value;
-    }
+        static constexpr size_t to_index(int r, int c) {
+            // Professional tip: add an assertion here in Debug mode
+            assert(r >= 0 && r < State::ROWS && c >= 0 && c < State::COLS);
+            return static_cast<size_t>(r * State::COLS + c);
+        }
 
-    return is_valid_move;
-}
 
+
+        // shifting functions:
+
+        // move function:
+        // takes Move (Up, Down, Left, Right)
+        // eg Up: swipe up ie "compact" blocks upward until impact on top edge while prioritising top 2 blocks in case of 3 similar blocks
+
+        // Question: return legal moves ? Or just modified gamestate ?
+        // Since data_ is small, just copy the gamestate and modify it
+
+
+        /* shifting functions:
+        * for use in algorithms
+        * i and j are coordinates for tile to shift to (overwrites tile)
+        * in other words: removes element in row or column and shifts all others,
+        * adding 0 on the end
+        * 
+        * @returns:
+        *  bool: indicates wether non-zero values were shifted, used to test if move was legal
+        */
+
+    private:
+
+        inline bool shift_up(int i, int j){
+            bool moved_non_zero_tile = false;
+            int8_t new_value;
+            for (int i_rewrite = i; i_rewrite < State::ROWS-1; i_rewrite++) {
+                new_value = this->data_[i_rewrite+1][j];
+                this->data_[i_rewrite][j] = new_value;
+                if (new_value!=0) moved_non_zero_tile = true;
+            }
+            // insert a 0 at the end
+            (*this)(State::ROWS-1,j) = 0;
+            return moved_non_zero_tile;
+        }
+
+        inline bool shift_down(int i, int j){
+            bool moved_non_zero_tile = false;
+            int8_t new_value;
+            for (int i_rewrite = i; i_rewrite > 0; i_rewrite--) {
+                new_value = this->data_[i_rewrite-1][j];
+                this->data_[i_rewrite][j] = new_value;
+                if (new_value!=0) moved_non_zero_tile = true;
+            }
+            // insert a 0 at the end
+            (*this)(0,j) = 0;
+            return moved_non_zero_tile;
+        }
+
+        inline bool shift_left(int i, int j){
+            bool moved_non_zero_tile = false;
+            int8_t new_value;
+            for (int j_rewrite = j; j_rewrite < State::COLS-1; j_rewrite++) {
+                new_value = this->data_[i][j_rewrite+1];
+                this->data_[i][j_rewrite] = new_value;
+                if (new_value!=0) moved_non_zero_tile = true;
+            }
+            // insert a 0 at the end
+            (*this)(i,State::COLS-1) = 0;
+            return moved_non_zero_tile;
+        }
+
+        inline bool shift_right(int i, int j){
+            bool moved_non_zero_tile = false;
+            int8_t new_value;
+            for (int j_rewrite = j; j_rewrite > 0; j_rewrite--) {
+                new_value = this->data_[i][j_rewrite-1];
+                this->data_[i][j_rewrite] = new_value;
+                if (new_value!=0) moved_non_zero_tile = true;
+            }
+            // insert a 0 at the end
+            (*this)(i,0) = 0;
+            return moved_non_zero_tile;
+        }
+
+    public:
+        // this part of a move is deterministic and is independent of Nature move
+        // warning, modifies gamestate
+        std::optional<State> player_move(action_type a) const {
+            State state_new = *this; // copies current gamestate to explore the move
+
+            bool is_valid_move = false;
+            switch (a)
+            {
+            case Up:
+                for (int j = 0; j < State::COLS; j++)
+                {
+                    // on each column, first check for holes
+                    int i = 0;
+                    int number_of_zeros = 0;
+                    int8_t previous_non_zero_tile = 0;
+                    int previous_non_zero_tile_index = -1;
+
+                    // note: consecutive zeros may slow things down
+                    while (i < State::ROWS && number_of_zeros < State::ROWS)
+                    {
+                        // shifts due to adding tiles and "gravity"
+                        if (state_new(i,j)!=0) {
+                            // check that previous tile was the same
+                            if (previous_non_zero_tile==state_new(i,j)) {
+                                // add tiles together
+                                state_new(previous_non_zero_tile_index,j)++;
+                                state_new.shift_up(i, j);
+                                // reset previous_non_zero_tile
+                                // (cannot add tiles to the same tile in the same turn)
+                                previous_non_zero_tile = 0;
+                                is_valid_move=true;
+                            } else {
+                                previous_non_zero_tile=state_new(i,j);
+                                previous_non_zero_tile_index = i;
+                                // move to next tile
+                                i++;
+                            }
+                        } else {
+                            // "gravity" shift on top of blank space
+                            if (state_new.shift_up(i, j)) is_valid_move=true;
+                            number_of_zeros++;
+                        }
+                    }
+                }
+                break;
+            case Down:
+                for (int j = 0; j < State::COLS; j++)
+                {
+                    // on each column, first check for holes
+                    int i = State::ROWS-1;
+                    int number_of_zeros = 0;
+                    int8_t previous_non_zero_tile = 0;
+                    int previous_non_zero_tile_index = -1;
+
+                    // note: consecutive zeros may slow things down
+                    while (i >= 0 && number_of_zeros < State::ROWS)
+                    {
+                        // shifts due to adding tiles and "gravity"
+                        if (state_new(i,j)!=0) {
+                            // check that previous tile was the same
+                            if (previous_non_zero_tile==state_new(i,j)) {
+                                // add tiles together
+                                state_new(previous_non_zero_tile_index,j)++;
+                                state_new.shift_down(i, j);
+                                previous_non_zero_tile = 0;
+                                is_valid_move=true;
+                            } else {
+                                previous_non_zero_tile=state_new(i,j);
+                                previous_non_zero_tile_index = i;
+                                // move to next tile
+                                i--;
+                            }
+                        } else {
+                            // "gravity" shift on top of blank space
+                            if (state_new.shift_down(i, j)) is_valid_move=true;
+                            number_of_zeros++;
+                        }
+                    }
+                }
+                break;
+            case Left:
+                for (int i = 0; i < State::ROWS; i++)
+                {
+                    // on each column, first check for holes
+                    int j = 0;
+                    int number_of_zeros = 0;
+                    int8_t previous_non_zero_tile = 0;
+                    int previous_non_zero_tile_index = -1;
+
+                    // note: consecutive zeros may slow things down
+                    while (j < State::COLS && number_of_zeros < State::COLS)
+                    {
+                        // shifts due to adding tiles and "gravity"
+                        if (state_new(i,j)!=0) {
+                            // check that previous tile was the same
+                            if (previous_non_zero_tile==state_new(i,j)) {
+                                // add tiles together
+                                state_new(i,previous_non_zero_tile_index)++;
+                                state_new.shift_left(i, j);
+                                previous_non_zero_tile = 0;
+                                is_valid_move=true;
+                            } else {
+                                previous_non_zero_tile=state_new(i,j);
+                                previous_non_zero_tile_index = j;
+                                // move to next tile
+                                j++;
+                            }
+                        } else {
+                            // "gravity" shift on top of blank space
+                            if (state_new.shift_left(i, j)) is_valid_move=true;
+                            number_of_zeros++;
+                        }
+                    }
+                }
+                break;
+            case Right:
+                for (int i = 0; i < State::ROWS; i++)
+                {
+                    // on each column, first check for holes
+                    int j = State::COLS-1;
+                    int number_of_zeros = 0;
+                    int8_t previous_non_zero_tile = 0;
+                    int previous_non_zero_tile_index = -1;
+
+                    // note: consecutive zeros may slow things down
+                    while (j >= 0 && number_of_zeros < State::COLS)
+                    {
+                        // shifts due to adding tiles and "gravity"
+                        if (state_new(i,j)!=0) {
+                            // check that previous tile was the same
+                            if (previous_non_zero_tile==state_new(i,j)) {
+                                // add tiles together
+                                state_new(i,previous_non_zero_tile_index)++;
+                                state_new.shift_right(i, j);
+                                previous_non_zero_tile = 0;
+                                is_valid_move=true;
+                            } else {
+                                previous_non_zero_tile=state_new(i,j);
+                                previous_non_zero_tile_index = j;
+                                // move to next tile
+                                j--;
+                            }
+                        } else {
+                            // "gravity" shift on top of blank space
+                            if (state_new.shift_right(i, j)) is_valid_move=true;
+                            number_of_zeros++;
+                        }
+                    }
+                }
+                break;
+            
+            default:
+                break;
+            }
+
+            return is_valid_move? std::optional<State>(state_new) : std::nullopt;
+            
+        }
+
+
+
+        std::vector<Coord> all_nature_moves(const State& gamestate) const {
+            int rows = State::ROWS;
+            int cols = State::COLS;
+            std::vector<Coord> list_of_empty_tiles;
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                if (gamestate(i,j)==0)
+                {
+                    list_of_empty_tiles.push_back({i,j});
+                }        
+                }
+            }
+
+            return list_of_empty_tiles;
+        }
+
+        std::optional<State> random_nature_move() const{
+            std::vector<Coord> list_of_empty_tiles = all_nature_moves(this->data_);
+            // Nature move is valid if there are still available tiles
+            bool is_valid_move = list_of_empty_tiles.size()>0;
+            
+            
+            if (is_valid_move)
+            {
+                State new_state = *this;
+                srand((unsigned) time(NULL) + list_of_empty_tiles.size()); 
+                Coord chosen_square = list_of_empty_tiles[rand()%list_of_empty_tiles.size()];
+                int8_t new_value = rand()%2 + 1;
+
+                new_state(chosen_square.i, chosen_square.j) = new_value;
+                return std::optional<State>(new_state);
+            }
+            else return std::nullopt;
+        }
+};
 
 // struct State
 // {
@@ -391,9 +453,9 @@ reward_type r([[maybe_unused]] int t, [[maybe_unused]] state_type s, [[maybe_unu
     return 0;
 }
 
-void print_gamestate(state_type& gamestate) {
-    int rows = gamestate.size();
-    int cols = gamestate[0].size();
+void print_gamestate(State& gamestate) {
+    int rows = State::ROWS;
+    int cols = State::COLS;
     // set this to true for easy test generation for copy and paste
     bool display_as_cpp_vectors = false;
 
@@ -409,11 +471,11 @@ void print_gamestate(state_type& gamestate) {
         for (int j = 0; j < cols; j++)
         {
             if (display_as_cpp_vectors) {
-                std::cout << std::setw(2) << gamestate[i][j]*1;
+                std::cout << std::setw(2) << gamestate(i, j)*1;
                 if (j < cols-1) std::cout << ",";
             } else {
-                if (gamestate[i][j] != 0) {
-                    std::cout << std::setw(2) << ( 2 << (gamestate[i][j]-1) ) << " ";
+                if (gamestate(i, j) != 0) {
+                    std::cout << std::setw(2) << ( 2 << (gamestate(i, j)-1) ) << " ";
                 } else {
                     std::cout << "   ";
                 }
@@ -457,26 +519,28 @@ inline void hash_to_gamestate(int winning_objective, int64_t hash, state_type& g
 /// @param winning_objective 
 /// @param gamestate 
 /// @return hash if gamestate has all tiles no greater than winning_objective, 0 else
-inline int64_t gamestate_to_hash(int winning_objective, state_type& gamestate, int rows, int cols) {
+inline int64_t gamestate_to_hash(int winning_objective, State& gamestate, int rows, int cols) {
+    // TODO: clean up rows and cols
     int64_t hash = 0;
     for (int i = rows-1; i >= 0; i--)
     {
         for (int j = cols-1; j >= 0; j--)
         {
             hash *= (winning_objective+1);
-            if (gamestate[i][j]>winning_objective) {
+            if (gamestate(i, j)>winning_objective) {
                 return 0;
             }
-            hash += gamestate[i][j];
+            hash += gamestate(i, j);
             // shifts the bits of the bitmask
         }
     }
     return hash;
 }
 
+/* old testing suite
 void test() {
 
-    /* TESTING : game playing for rule testing */
+    // TESTING : game playing for rule testing //
 
     // Testing player_move:
     // Testing fusion and movement
@@ -655,6 +719,7 @@ void test() {
         }
     }
 }
+*/ // end of old testing suite
 
 inline void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &value, int rows, int cols, int winning_objective, int T) {
     int total_combinations = pow((winning_objective+1), rows*cols);
@@ -723,21 +788,22 @@ inline void optimal_policy(std::vector<action_type> &policy, std::vector<reward_
                     // generate all Nature moves from Player move
                     state_type temp_player_move(temp);
                     
-                    bool valid_move = player_move(temp_player_move,action_type(a));
+                    // bool valid_move = player_move(temp_player_move,action_type(a));
+                    std::optional<State> next_state = State(temp_player_move).player_move(action_type(a));
                     
-                    if (valid_move) {
-                        std::vector<Coord> nature = all_nature_moves(temp_player_move);
-                        for (std::size_t i = 0; i < nature.size(); i++)
+                    if (next_state.has_value()) {
+                        std::vector<Coord> nature = next_state.value().all_nature_moves(temp_player_move);
+                        for (std::size_t k = 0; k < nature.size(); k++)
                         {
-                            // TODO: what does this line do?
-                            state_type nature_move(temp_player_move);
+                            State nature_move(temp_player_move);
                             
                             // Nature generates a 2=2^1 tile
-                            nature_move[nature[i].i][nature[i].j] = 1;
+                            // TODO: clean up this explicit access (by not using state_type directly)
+                            nature_move(nature[k].i, nature[k].j) = 1;
                             int64_t hashed_state_prime_2 = gamestate_to_hash(winning_objective,nature_move, rows, cols);                            
 
                             // Nature generates a 4=2^2 tile
-                            nature_move[nature[i].i][nature[i].j] = 2;
+                            nature_move(nature[k].i, nature[k].j) = 2;
                             int64_t hashed_state_prime_4 = gamestate_to_hash(winning_objective,nature_move, rows, cols);
 
                             // transition_probability is actually just :
@@ -747,7 +813,7 @@ inline void optimal_policy(std::vector<action_type> &policy, std::vector<reward_
                             bellman_expression += value[hashed_state_prime_4] * 1.0/(nature.size()*2);
                         }
                     } else {
-                        // ignore this move
+                        // ignore this move with sentinel penalty value
                         bellman_expression = -1;
                     }
                 }
@@ -848,12 +914,13 @@ int main(int argc, char *argv[]) {
         std::getchar();
 
         // initialise to empty game
-        state_type gamestate(rows, std::vector<int8_t>(cols)); // DEBUG: comment this for testing gamestates
+        
+        State gamestate = State();
         
         action_type optimal = Up;
         
         // at each iteration make Nature move
-        while (random_nature_move(gamestate) && optimal!=None) { // DEBUG: comment this for testing gamestates
+        while (gamestate.random_nature_move() && optimal!=None) { // DEBUG: comment this for testing gamestates
 
         // do { // DEBUG: uncomment for testing gamestates
 
@@ -865,30 +932,36 @@ int main(int argc, char *argv[]) {
             print_move(optimal);
 
             action_type a = None;
+            std::optional<State> next_state = std::nullopt;
             // player_move returns true if move was successful and false if move is invalid
-            while (!player_move(gamestate,a) && optimal!=None)
-            {
-                char input;
-                std::cin >> input;
-                switch (input)
-                {
-                case 'w':
-                    a=Up;
-                    break;
-                case 'a':
-                    a=Left;
-                    break;
-                case 's':
-                    a=Down;
-                    break;
-                case 'd':
-                    a=Right;
-                    break;
+            if (optimal!=None) {
                 
-                default:
-                    a=None;
-                    break;
+                do
+                {
+                    char input;
+                    std::cin >> input;
+                    switch (input)
+                    {
+                    case 'w':
+                        a=Up;
+                        break;
+                    case 'a':
+                        a=Left;
+                        break;
+                    case 's':
+                        a=Down;
+                        break;
+                    case 'd':
+                        a=Right;
+                        break;
+                    
+                    default:
+                        a=None;
+                        break;
+                    }
+                    next_state = gamestate.player_move(a);
                 }
+                while (next_state.has_value()==false); // repeat until valid move is entered
             }
         }
         

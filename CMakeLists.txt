@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(Solved2048 LANGUAGES CXX)
 
+# Set the board size as a cache variable, allowing users to configure it when invoking CMake
+set(BOARD_SIZE_ROWS 2 CACHE STRING "Number of rows in the 2048 board")
+set(BOARD_SIZE_COLS 3 CACHE STRING "Number of columns in the 2048 board")
+add_definitions(-DBOARD_SIZE_ROWS=${BOARD_SIZE_ROWS} -DBOARD_SIZE_COLS=${BOARD_SIZE_COLS})
+# Export compile commands for clang-tidy and editor tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # --- 1. C++17 Standard Enforcement ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
