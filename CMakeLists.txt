@@ -1,0 +1,67 @@
+cmake_minimum_required(VERSION 3.14)
+project(Solved2048 LANGUAGES CXX)
+
+# --- 1. C++17 Standard Enforcement ---
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# --- 2. Professional Compiler Flags ---
+if(MSVC)
+    # MSVC-specific flags
+    add_compile_options(/W4 /WX)
+else()
+    # General flags for all builds
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+
+    # Specific flags for Debug mode only
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Build type is Debug: Enabling AddressSanitizer")
+        # Enable AddressSanitizer for Debug builds
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+        add_compile_options(-Og)
+        # Note: this is gold standard for easy debug, -O0 for 0 optimization
+    endif()
+    
+    # Flags for Release mode (optimization)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+        # Note: can use -02 as well, -03 is more aggressive
+    endif()
+endif()
+
+# --- 3. Dependency Management (GoogleTest) ---
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    # GIT_REPOSITORY https://github.com/google/googletest.git
+    # GIT_TAG        release-1.12.1
+)
+# For Windows compatibility
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+# --- 4. Project Layout ---
+include_directories(include)
+
+# Define your core library
+add_library(core_logic
+    src/state.cpp
+    src/utils.cpp
+)
+
+# Define the main executable
+add_executable(solver_2048 src/main.cpp)
+target_link_libraries(solver_2048 PRIVATE core_logic)
+
+# --- 5. Unit Testing Setup ---
+enable_testing()
+add_executable(unit_tests 
+    tests/test_state.cpp
+)
+target_link_libraries(unit_tests PRIVATE core_logic gtest_main)
+
+include(GoogleTest)
+gtest_discover_tests(unit_tests)

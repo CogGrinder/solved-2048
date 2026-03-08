@@ -13,7 +13,7 @@
 
 #ifdef DEBUG
 
-#define PRINT_TILE(x) std::cout << #x << "= " << std::setw(2) << ( 2 << x-1 )<< std::endl
+#define PRINT_TILE(x) std::cout << #x << "= " << std::setw(2) << ( 2 << (x-1) )<< std::endl
 #define PRINT(x) std::cout << #x << "= " << x << std::endl
 #define OK() std::cout << " OK at " << __LINE__ << std::endl
 #define PRINT_GAMESTATE(x) print_gamestate(x)
@@ -91,7 +91,7 @@ struct Coord {
  *  bool: indicates wether non-zero values were shifted, used to test if move was legal
  */
 
-inline bool shift_up(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_up(int i, int j, int rows, state_type& gamestate){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int i_rewrite = i; i_rewrite < rows-1; i_rewrite++) {
@@ -104,7 +104,7 @@ inline bool shift_up(int i, int j, int rows, int cols, state_type& gamestate){
     return moved_non_zero_tile;
 }
 
-inline bool shift_down(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_down(int i, int j, state_type& gamestate){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int i_rewrite = i; i_rewrite > 0; i_rewrite--) {
@@ -117,7 +117,7 @@ inline bool shift_down(int i, int j, int rows, int cols, state_type& gamestate){
     return moved_non_zero_tile;
 }
 
-inline bool shift_left(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_left(int i, int j, int cols, state_type& gamestate){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int j_rewrite = j; j_rewrite < cols-1; j_rewrite++) {
@@ -130,7 +130,7 @@ inline bool shift_left(int i, int j, int rows, int cols, state_type& gamestate){
     return moved_non_zero_tile;
 }
 
-inline bool shift_right(int i, int j, int rows, int cols, state_type& gamestate){
+inline bool shift_right(int i, int j, state_type& gamestate){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int j_rewrite = j; j_rewrite > 0; j_rewrite--) {
@@ -170,7 +170,7 @@ bool player_move(state_type& gamestate, action_type a){
                     if (previous_non_zero_tile==gamestate[i][j]) {
                         // add tiles together
                         gamestate[previous_non_zero_tile_index][j]++;
-                        shift_up(i, j, rows, cols, gamestate);
+                        shift_up(i, j, rows, gamestate);
                         // reset previous_non_zero_tile
                         // (cannot add tiles to the same tile in the same turn)
                         previous_non_zero_tile = 0;
@@ -183,7 +183,7 @@ bool player_move(state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    if (shift_up(i, j, rows, cols, gamestate)) is_valid_move=true;
+                    if (shift_up(i, j, rows, gamestate)) is_valid_move=true;
                     number_of_zeros++;
                 }
             }
@@ -207,7 +207,7 @@ bool player_move(state_type& gamestate, action_type a){
                     if (previous_non_zero_tile==gamestate[i][j]) {
                         // add tiles together
                         gamestate[previous_non_zero_tile_index][j]++;
-                        shift_down(i, j, rows, cols, gamestate);
+                        shift_down(i, j, gamestate);
                         previous_non_zero_tile = 0;
                         is_valid_move=true;
                     } else {
@@ -218,7 +218,7 @@ bool player_move(state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    if (shift_down(i, j, rows, cols, gamestate)) is_valid_move=true;
+                    if (shift_down(i, j, gamestate)) is_valid_move=true;
                     number_of_zeros++;
                 }
             }
@@ -242,7 +242,7 @@ bool player_move(state_type& gamestate, action_type a){
                     if (previous_non_zero_tile==gamestate[i][j]) {
                         // add tiles together
                         gamestate[i][previous_non_zero_tile_index]++;
-                        shift_left(i, j, rows, cols, gamestate);
+                        shift_left(i, j, cols, gamestate);
                         previous_non_zero_tile = 0;
                         is_valid_move=true;
                     } else {
@@ -253,7 +253,7 @@ bool player_move(state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    if (shift_left(i, j, rows, cols, gamestate)) is_valid_move=true;
+                    if (shift_left(i, j, cols, gamestate)) is_valid_move=true;
                     number_of_zeros++;
                 }
             }
@@ -277,7 +277,7 @@ bool player_move(state_type& gamestate, action_type a){
                     if (previous_non_zero_tile==gamestate[i][j]) {
                         // add tiles together
                         gamestate[i][previous_non_zero_tile_index]++;
-                        shift_right(i, j, rows, cols, gamestate);
+                        shift_right(i, j, gamestate);
                         previous_non_zero_tile = 0;
                         is_valid_move=true;
                     } else {
@@ -288,7 +288,7 @@ bool player_move(state_type& gamestate, action_type a){
                     }
                 } else {
                     // "gravity" shift on top of blank space
-                    if (shift_right(i, j, rows, cols, gamestate)) is_valid_move=true;
+                    if (shift_right(i, j, gamestate)) is_valid_move=true;
                     number_of_zeros++;
                 }
             }
@@ -321,7 +321,7 @@ std::vector<Coord> all_nature_moves(const state_type& gamestate) {
     return list_of_empty_tiles;
 }
 
-bool random_nature_move(int rows, int cols, state_type& gamestate){
+bool random_nature_move(state_type& gamestate){
     std::vector<Coord> list_of_empty_tiles = all_nature_moves(gamestate);
     // Nature move is valid if there are still available tiles
     bool is_valid_move = list_of_empty_tiles.size()>0;
@@ -387,7 +387,7 @@ reward_type final_reward(int8_t goal, const state_type& gamestate) {
  * s: state
  * a: action
  */
-reward_type r(int t, state_type s, action_type a) {
+reward_type r([[maybe_unused]] int t, [[maybe_unused]] state_type s, [[maybe_unused]] action_type a) {
     return 0;
 }
 
@@ -413,7 +413,7 @@ void print_gamestate(state_type& gamestate) {
                 if (j < cols-1) std::cout << ",";
             } else {
                 if (gamestate[i][j] != 0) {
-                    std::cout << std::setw(2) << ( 2 << gamestate[i][j]-1 ) << " ";
+                    std::cout << std::setw(2) << ( 2 << (gamestate[i][j]-1) ) << " ";
                 } else {
                     std::cout << "   ";
                 }
@@ -482,8 +482,8 @@ void test() {
     // Testing fusion and movement
     {
         {
-            int rows = 1;
-            int cols = 4;
+            // int rows = 1;
+            // int cols = 4;
 
             state_type gamestate = 
             {
@@ -503,8 +503,8 @@ void test() {
         }
 
         {
-            int rows = 3;
-            int cols = 4;
+            // int rows = 3;
+            // int cols = 4;
 
             state_type gamestate = 
             {
@@ -528,8 +528,8 @@ void test() {
         }
 
         {
-            int rows = 5;
-            int cols = 5;
+            // int rows = 5;
+            // int cols = 5;
 
             state_type gamestate = 
             {
@@ -637,8 +637,8 @@ void test() {
 
     // Testing random_nature_move
     {
-        int rows = 5;
-        int cols = 5;
+        // int rows = 5;
+        // int cols = 5;
 
         state_type gamestate = 
         {
@@ -650,7 +650,7 @@ void test() {
         };
 
         PRINT_GAMESTATE(gamestate);
-        while (random_nature_move(rows,cols,gamestate)) {
+        while (random_nature_move(gamestate)) {
             PRINT_GAMESTATE(gamestate);
         }
     }
@@ -727,8 +727,9 @@ inline void optimal_policy(std::vector<action_type> &policy, std::vector<reward_
                     
                     if (valid_move) {
                         std::vector<Coord> nature = all_nature_moves(temp_player_move);
-                        for (int i = 0; i < nature.size(); i++)
+                        for (std::size_t i = 0; i < nature.size(); i++)
                         {
+                            // TODO: what does this line do?
                             state_type nature_move(temp_player_move);
                             
                             // Nature generates a 2=2^1 tile
@@ -781,6 +782,21 @@ int main(int argc, char *argv[]) {
     int cols = 3;
     int8_t winning_objective = 5; // power of winning objective
 
+    // user entered winning_objective
+    if (argc>1) {
+        winning_objective = atoi(argv[1]);
+    }
+
+    // user entered rows
+    if (argc>2) {
+        rows = atoi(argv[2]);
+    }
+
+    // user entered cols
+    if (argc>3) {
+        rows = atoi(argv[3]);
+    }
+
     // if, on the turn T-1:
     // - half of the grid + 1 is filled with winning_objective - 1
     // - the other half was first filled with winning_objective - 2
@@ -788,18 +804,15 @@ int main(int argc, char *argv[]) {
     // in the worst case, this happens with only Nature moves of 2^1,
     // so T = grid total / 2 + 1 suffices
 
+
     int halfgrid = rows*cols /2;
     int worse_case_total = pow(2,winning_objective-1)*(halfgrid + 1) + pow(2,winning_objective-2)* (rows*cols - halfgrid - 1);
     int T = ( worse_case_total )/2 + 1;
 
-    // user entered winning_objective
-    if (argc>1) {
-        winning_objective = atoi(argv[1]);
-    }
 
     // user entered T
-    if (argc>2) {
-        T = atoi(argv[2]);
+    if (argc>4) {
+        T = atoi(argv[4]);
     }
 
 
@@ -807,7 +820,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Rows= " << rows << std::endl;
     std::cout << "Columns= " << cols << std::endl;
     std::cout << "Time horizon= " << std::setw(2) << T << std::endl;
-    std::cout << "Objective= " << std::setw(2) << ( 2 << winning_objective-1 )<< std::endl;
+    std::cout << "Objective= " << std::setw(2) << ( 2 << (winning_objective-1) )<< std::endl;
     std::cout << "Executing backwards induction for optimal policy..." << std::endl;
 
     // empty policy that will be filled with policy_t
@@ -840,7 +853,7 @@ int main(int argc, char *argv[]) {
         action_type optimal = Up;
         
         // at each iteration make Nature move
-        while (random_nature_move(rows,cols,gamestate) && optimal!=None) { // DEBUG: comment this for testing gamestates
+        while (random_nature_move(gamestate) && optimal!=None) { // DEBUG: comment this for testing gamestates
 
         // do { // DEBUG: uncomment for testing gamestates
 
@@ -882,7 +895,7 @@ int main(int argc, char *argv[]) {
         int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
         std::cout << "\nGame End.\nReward= " <<value[hash] << "\n" << std::endl;
 
-        // while (random_nature_move(rows,cols,gamestate) && optimal!=None); // DEBUG: uncomment for testing gamestates
+        // while (random_nature_move(gamestate) && optimal!=None); // DEBUG: uncomment for testing gamestates
         }
     }
 
