@@ -24,6 +24,9 @@ else()
     # Specific flags for Debug mode only
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Build type is Debug: Enabling AddressSanitizer")
+        # Add legacy DEBUG macro
+        add_compile_definitions(DEBUG)
+
         # Enable AddressSanitizer for Debug builds
         add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
         add_link_options(-fsanitize=address)
@@ -61,6 +64,10 @@ add_library(core_logic
 
 # Define the main executable
 add_executable(solver_2048 src/main.cpp)
+# TODO: remove direct calls to tests in main.cpp
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_sources(solver_2048 PRIVATE tests/test_state.cpp)
+endif()
 target_link_libraries(solver_2048 PRIVATE core_logic)
 
 # --- 5. Unit Testing Setup ---
