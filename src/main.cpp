@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
         
         State gamestate = State();
         
-        action_type optimal = Up;
+        action_type optimal = Action::Up;
         
         // at each iteration make Nature move
 
@@ -157,10 +157,10 @@ int main(int argc, char *argv[]) {
             std::cout << "Optimal policy= ";
             print_move(optimal);
 
-            action_type a = None;
+            action_type a = Action::None;
             std::optional<State> next_state = std::nullopt;
             // player_move returns true if move was successful and false if move is invalid
-            if (optimal!=None) {
+            if (optimal!=Action::None) {
                 
                 do
                 {
@@ -169,20 +169,20 @@ int main(int argc, char *argv[]) {
                     switch (input)
                     {
                     case 'w':
-                        a=Up;
+                        a=Action::Up;
                         break;
                     case 'a':
-                        a=Left;
+                        a=Action::Left;
                         break;
                     case 's':
-                        a=Down;
+                        a=Action::Down;
                         break;
                     case 'd':
-                        a=Right;
+                        a=Action::Right;
                         break;
                     
                     default:
-                        a=None;
+                        a=Action::None;
                         break;
                     }
                     next_state = gamestate.player_move(a);
@@ -196,12 +196,12 @@ int main(int argc, char *argv[]) {
                 break; // no more player moves possible, game ends
             }
         }
-        while (optimal!=None); // optimal policy is None when no move is possible
+        while (optimal!=Action::None); // optimal policy is None when no move is possible
         
         int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
         std::cout << "\nGame End.\nReward= " <<value[hash] << "\n" << std::endl;
 
-        // while (random_nature_move(gamestate) && optimal!=None); // DEBUG: uncomment for testing gamestates
+        // while (random_nature_move(gamestate) && optimal!=Action::None); // DEBUG: uncomment for testing gamestates
         }
     }
 

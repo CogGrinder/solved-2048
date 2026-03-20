@@ -159,7 +159,7 @@ std::optional<State> State::player_move(action_type a) const {
     bool is_valid_move = false;
     switch (a)
     {
-    case Up:
+    case Action::Up:
         for (int j = 0; j < State::COLS; j++)
         {
             // on each column, first check for holes
@@ -196,7 +196,7 @@ std::optional<State> State::player_move(action_type a) const {
             }
         }
         break;
-    case Down:
+    case Action::Down:
         for (int j = 0; j < State::COLS; j++)
         {
             // on each column, first check for holes
@@ -231,7 +231,7 @@ std::optional<State> State::player_move(action_type a) const {
             }
         }
         break;
-    case Left:
+    case Action::Left:
         for (int i = 0; i < State::ROWS; i++)
         {
             // on each column, first check for holes
@@ -266,7 +266,7 @@ std::optional<State> State::player_move(action_type a) const {
             }
         }
         break;
-    case Right:
+    case Action::Right:
         for (int i = 0; i < State::ROWS; i++)
         {
             // on each column, first check for holes

@@ -38,25 +38,25 @@ TEST(StateMoveTest, InvalidUpMovesReturnNullopt) {
         {0, 3, 2},
         {0, 2, 0},
     });
-    EXPECT_FALSE(up_invalid.player_move(Up).has_value());
+    EXPECT_FALSE(up_invalid.player_move(Action::Up).has_value());
 
     const State up_invalid_2({
         {1, 4, 4},
         {2, 0, 1},
     });
-    EXPECT_FALSE(up_invalid_2.player_move(Up).has_value());
+    EXPECT_FALSE(up_invalid_2.player_move(Action::Up).has_value());
 
     const State left_invalid({
         {2, 1, 3},
         {2, 3, 1},
     });
-    EXPECT_FALSE(left_invalid.player_move(Left).has_value());
+    EXPECT_FALSE(left_invalid.player_move(Action::Left).has_value());
 
     const State down_invalid({
         {2, 1, 3},
         {3, 3, 1},
     });
-    EXPECT_FALSE(down_invalid.player_move(Down).has_value());
+    EXPECT_FALSE(down_invalid.player_move(Action::Down).has_value());
 }
 
 TEST(StateMoveTest, FusionAndMovementExpectedSequence) {
@@ -67,7 +67,7 @@ TEST(StateMoveTest, FusionAndMovementExpectedSequence) {
         {3, 1, 1},
     });
 
-    const auto after_left = gamestate.player_move(Left);
+    const auto after_left = gamestate.player_move(Action::Left);
     ASSERT_TRUE(after_left.has_value());
 
     const State expected_after_left({
@@ -76,7 +76,7 @@ TEST(StateMoveTest, FusionAndMovementExpectedSequence) {
     });
     EXPECT_EQ(*after_left, expected_after_left);
 
-    const auto after_down = expected_after_left.player_move(Down);
+    const auto after_down = expected_after_left.player_move(Action::Down);
     ASSERT_TRUE(after_down.has_value());
 
     const State expected_after_down({

@@ -50,18 +50,14 @@ reward_type r([[maybe_unused]] int t, [[maybe_unused]] State s, [[maybe_unused]]
     return 0;
 }
 
+// Legacy debug printing functions
+// TODO: remove with better logging system
 void print_gamestate(const State& gamestate) {
     std::cout << gamestate;
 }
 
 void print_move(action_type a) {
-    switch (a) {
-        case Up: std::cout << "Up" << std::endl; break;
-        case Down: std::cout << "Down" << std::endl; break;
-        case Left: std::cout << "Left" << std::endl; break;
-        case Right: std::cout << "Right" << std::endl; break;
-        default: std::cout << "None" << std::endl; break;
-    }
+    std::cout << a << std::endl;
 }
 
 
@@ -108,7 +104,7 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
         State temp;
 
         // hashed_state 0 is an empty board. It does not have any valid moves for player therefore game ends
-        policy[0] = None;
+        policy[0] = Action::None;
         new_value[0] = 0;
 
 
@@ -119,18 +115,18 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
             if (time <= T-5) {PRINT_GAMESTATE(temp);}
 
             //default
-            policy[hashed_state] = None;
+            policy[hashed_state] = Action::None;
                         
             reward_type max_bellman_expression = -1; //initialise max to -1
-            action_type argmax = None;
+            action_type argmax = Action::None;
 
             //find max_bellman_expression and argmax over all actions (action_set)
-            for (int a = Up; a <= None; a++)
+            for (auto a : Actions::All)
             {
                 //Bellman expression: r + average value with action a
                 reward_type bellman_expression = r(time,temp,action_type(a));
 
-                if (a==None) {
+                if (a==Action::None) {
                     // None skips the turn
                     // so bellman_expression is previous value of the same state
                     bellman_expression = value[hashed_state];
