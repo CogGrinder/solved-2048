@@ -65,10 +65,6 @@ add_library(core_logic
 
 # Define the main executable
 add_executable(solver_2048 src/main.cpp)
-# TODO: remove direct calls to tests in main.cpp
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_sources(solver_2048 PRIVATE tests/test_state.cpp)
-endif()
 target_link_libraries(solver_2048 PRIVATE core_logic)
 
 # --- 5. Unit Testing Setup ---

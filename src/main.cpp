@@ -54,9 +54,9 @@
 int main(int argc, char *argv[]) {
     util::setup_signal_handlers();
 
-    #ifdef DEBUG
-    test();
-    #endif
+    // #ifdef DEBUG
+    // test();
+    // #endif
 
     int rows = State::ROWS;
     int cols = State::COLS;
