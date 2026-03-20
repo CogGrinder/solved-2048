@@ -60,6 +60,7 @@ include_directories(include)
 add_library(core_logic
     src/state.cpp
     src/utils.cpp
+    src/interrupt_handler.cpp
 )
 
 # Define the main executable

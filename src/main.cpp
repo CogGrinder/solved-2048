@@ -11,6 +11,7 @@
 #include "state.hpp"
 #include "utils.hpp"
 #include "test_state.hpp"
+#include "interrupt_handler.hpp"
 
 // 2048 lite
 /******************/
@@ -51,6 +52,8 @@
 
 
 int main(int argc, char *argv[]) {
+    util::setup_signal_handlers();
+
     #ifdef DEBUG
     test();
     #endif

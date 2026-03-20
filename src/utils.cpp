@@ -3,6 +3,7 @@
 #include "types.hpp"
 #include "state.hpp"
 #include "debug.hpp"
+#include "interrupt_handler.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -94,6 +95,12 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
 
     for (int time = T-1; time >= 0 ; time--)
     {
+        if (util::global_stop_requested.load()) {
+            std::cout << "\n[User Interrupt] MDP backwards induction stopped at time " << time+1 << std::endl;
+            util::global_stop_requested.store(false);
+            break;
+        }
+
         std::cout << "Time: " << time << std::endl;
 
         // policy will be rewritten
