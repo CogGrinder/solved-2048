@@ -59,6 +59,21 @@ TEST(StateMoveTest, InvalidUpMovesReturnNullopt) {
     EXPECT_FALSE(down_invalid.player_move(Action::Down).has_value());
 }
 
+TEST(StateMoveTest, DoubleMergePrevention) {
+    SKIP_UNLESS_BOARD_2X3();
+    // [1, 1, 1] should become [2, 1, 0] and should NOT become [1, 2, 0] or any other line
+    const State triple({
+        {1, 1, 1},
+        {0, 0, 0},
+    });
+    const auto result = triple.player_move(Action::Left);
+    const State expected({
+        {2, 1, 0},
+        {0, 0, 0},
+    });
+    EXPECT_EQ(*result, expected);
+}
+
 TEST(StateMoveTest, FusionAndMovementExpectedSequence) {
     SKIP_UNLESS_BOARD_2X3();
 
@@ -89,18 +104,15 @@ TEST(StateMoveTest, FusionAndMovementExpectedSequence) {
 TEST(StateHashTest, HashRoundTripPreservesState) {
     SKIP_UNLESS_BOARD_2X3();
 
-    constexpr int rows = 2;
-    constexpr int cols = 3;
-
     State gamestate({
         {3, 4, 0},
         {1, 3, 5},
     });
 
-    const auto hash = gamestate_to_hash(5, gamestate, rows, cols);
+    const auto hash = gamestate_to_hash(5, gamestate);
 
     State from_hash;
-    hash_to_gamestate(5, hash, from_hash, rows, cols);
+    hash_to_gamestate(5, hash, from_hash);
 
     EXPECT_EQ(from_hash, gamestate);
 }

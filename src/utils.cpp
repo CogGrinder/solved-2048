@@ -22,11 +22,9 @@
  * even if game has no more valid moves. 
  */
 reward_type final_reward(int8_t goal, const State& gamestate) {
-    int rows = State::ROWS;
-    int cols = State::COLS;
-    for (int i = 0; i < rows; i++)
+    for (int i = 0; i < State::ROWS; i++)
     {
-        for (int j = 0; j < cols; j++)
+        for (int j = 0; j < State::COLS; j++)
         {
             if (gamestate(i, j)>=goal)
             {
@@ -77,7 +75,7 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
 
     // initialising value to final time reward
     while (hashed_state < total_combinations) {
-        hash_to_gamestate(winning_objective, hashed_state, temp, rows, cols);
+        hash_to_gamestate(winning_objective, hashed_state, temp);
         value[hashed_state] = final_reward(winning_objective, temp);
 
         // go to the next hash
@@ -111,7 +109,7 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
         // go through all possible positions for tiles, except 0 because you get Up as optimal move
         for (int64_t hashed_state = 1; hashed_state < total_combinations; hashed_state++) {
             // generate the gamestate, with only the decided empty tiles, all others empty
-            hash_to_gamestate(winning_objective, hashed_state, temp, rows, cols);
+            hash_to_gamestate(winning_objective, hashed_state, temp);
             if (time <= T-5) {PRINT_GAMESTATE(temp);}
 
             //default
@@ -153,12 +151,12 @@ void optimal_policy(std::vector<action_type> &policy, std::vector<reward_type> &
                             // Nature generates a 2=2^1 tile
                             // TODO: clean up this explicit access (by not using state_type directly)
                             nature_move(nature[k].i, nature[k].j) = 1;
-                            int64_t hashed_state_prime_2 = gamestate_to_hash(winning_objective,nature_move, rows, cols);                            
+                            int64_t hashed_state_prime_2 = gamestate_to_hash(winning_objective,nature_move);                            
                             // if (time <= T-5) {PRINT_GAMESTATE(nature_move);}
 
                             // Nature generates a 4=2^2 tile
                             nature_move(nature[k].i, nature[k].j) = 2;
-                            int64_t hashed_state_prime_4 = gamestate_to_hash(winning_objective,nature_move, rows, cols);
+                            int64_t hashed_state_prime_4 = gamestate_to_hash(winning_objective,nature_move);
                             // if (time <= T-5) {PRINT_GAMESTATE(nature_move);}
 
                             // transition_probability is actually just :

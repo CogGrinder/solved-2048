@@ -68,16 +68,6 @@ int main(int argc, char *argv[]) {
     if (argc>1) {
         winning_objective = atoi(argv[1]);
     }
-
-    // user entered rows
-    if (argc>2) {
-        rows = atoi(argv[2]);
-    }
-
-    // user entered cols
-    if (argc>3) {
-        rows = atoi(argv[3]);
-    }
     */
 
     // if, on the turn T-1:
@@ -151,7 +141,7 @@ int main(int argc, char *argv[]) {
             }
 
             print_gamestate(gamestate);
-            int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
+            int64_t hash = gamestate_to_hash(winning_objective,gamestate);
             std::cout << "Value= " << value[hash] << std::endl;
             optimal = policy[hash];
             std::cout << "Optimal policy= ";
@@ -198,7 +188,7 @@ int main(int argc, char *argv[]) {
         }
         while (optimal!=Action::None); // optimal policy is None when no move is possible
         
-        int64_t hash = gamestate_to_hash(winning_objective,gamestate, rows, cols);
+        int64_t hash = gamestate_to_hash(winning_objective,gamestate);
         std::cout << "\nGame End.\nReward= " <<value[hash] << "\n" << std::endl;
 
         // while (random_nature_move(gamestate) && optimal!=Action::None); // DEBUG: uncomment for testing gamestates
