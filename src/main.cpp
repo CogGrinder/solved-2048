@@ -62,14 +62,6 @@ int main(int argc, char *argv[]) {
     int cols = State::COLS;
     int8_t winning_objective = 5; // power of winning objective
 
-    // TODO: remove Deprecated
-    /*
-    // user entered winning_objective
-    if (argc>1) {
-        winning_objective = atoi(argv[1]);
-    }
-    */
-
     // if, on the turn T-1:
     // - half of the grid + 1 is filled with winning_objective - 1
     // - the other half was first filled with winning_objective - 2
@@ -83,9 +75,16 @@ int main(int argc, char *argv[]) {
     int T = ( worse_case_total )/2 + 1;
 
 
+    // TODO: move to CLI argument parsing
+
+    // user entered winning_objective
+    if (argc>1) {
+        winning_objective = atoi(argv[1]);
+    }
+
     // user entered T
-    if (argc>4) {
-        T = atoi(argv[4]);
+    if (argc>2) {
+        T = atoi(argv[2]);
     }
 
 
