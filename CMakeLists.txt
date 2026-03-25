@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 project(Solved2048 LANGUAGES CXX)
 
+# Set the board size as a cache variable, allowing users to configure it when invoking CMake
+set(BOARD_SIZE_ROWS 2 CACHE STRING "Number of rows in the 2048 board")
+set(BOARD_SIZE_COLS 3 CACHE STRING "Number of columns in the 2048 board")
+add_definitions(-DBOARD_SIZE_ROWS=${BOARD_SIZE_ROWS} -DBOARD_SIZE_COLS=${BOARD_SIZE_COLS})
+# Export compile commands for clang-tidy and editor tools
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # --- 1. C++17 Standard Enforcement ---
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,6 +24,9 @@ else()
     # Specific flags for Debug mode only
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Build type is Debug: Enabling AddressSanitizer")
+        # Add legacy DEBUG macro
+        add_compile_definitions(DEBUG)
+
         # Enable AddressSanitizer for Debug builds
         add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
         add_link_options(-fsanitize=address)
@@ -50,6 +60,7 @@ include_directories(include)
 add_library(core_logic
     src/state.cpp
     src/utils.cpp
+    src/interrupt_handler.cpp
 )
 
 # Define the main executable
