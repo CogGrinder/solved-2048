@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <array>
 #include <cstdint>
 #include <iostream>
 
@@ -28,10 +29,13 @@ inline std::ostream& operator<<(std::ostream& os, action_type action) {
     }
 }
 
-typedef std::vector<std::vector<int8_t>> state_type;
-// Next implementation:
-// typedef std::vector<int8_t> state_size_type;
+// Legacy implementation:
+// typedef std::vector<std::vector<int8_t>> state_type;
+// New implementation:
+typedef std::array<int8_t, BOARD_SIZE_ROWS * BOARD_SIZE_COLS> state_type;
 
+// Switch this between precisions for minor speed improvements,
+// and sizable memory usage reduction
 typedef double reward_type;
 
 struct Coord {
