@@ -13,8 +13,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4 # Updated to v4 to fix deprecation warning
     
-    - name: Install Basic Build Dependencies
-      run: sudo apt-get install -y cmake build-essential
 
     - name: Configure CMake
       run: >
