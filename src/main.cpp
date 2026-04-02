@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 
     int rows = State::ROWS;
     int cols = State::COLS;
-    int8_t winning_objective = 5; // power of winning objective
+    int8_t winning_objective = WINNING_TILE_POWER; // power of winning objective
 
     // if, on the turn T-1:
     // - half of the grid + 1 is filled with winning_objective - 1

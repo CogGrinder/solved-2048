@@ -22,10 +22,13 @@ public:
 
     State();
     State(const state_type& data);
+    State(const std::vector<std::vector<int8_t>>& data);
 
     std::optional<State> player_move(action_type a) const;
     std::vector<Coord> all_nature_moves() const;
     std::optional<State> random_nature_move() const;
+    friend inline void hash_to_gamestate(int winning_objective, const int64_t hash, State& gamestate);
+    friend inline int64_t gamestate_to_hash(int winning_objective, const State& gamestate);
 
 private:
     static constexpr size_t to_index(int r, int c);

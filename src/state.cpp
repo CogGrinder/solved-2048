@@ -1,6 +1,7 @@
 #include "state.hpp"
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 
 /*
 Class representing the game state on a board of dimensions ROWS x COLS,
@@ -10,17 +11,17 @@ where ROWS and COLS are compile-time constants defined in CMakeLists.txt.
 // Overloading () call for board_instance(i,j) access
 // Getting with const
 int8_t State::operator()(int r, int c) const {
-    return this->data_[r][c];
-
+    // Legacy implementation:
+    // return this->data_[r][c];
     // Next implementation:
-    // return data_[r * rows + c];
+    return data_[r * State::COLS + c];
 }
 // Setting with non-const reference
 int8_t& State::operator()(int r, int c) {
-    return this->data_[r][c];
-
+    // Legacy implementation:
+    // return this->data_[r][c];
     // Next implementation:
-    // return data_[r * rows + c];
+    return data_[r * State::COLS + c];
 }
 
 // Overloading <<
@@ -67,11 +68,28 @@ bool operator==(const State& s1, const State& s2) {
     return s1.data_ == s2.data_;
 }
 
-State::State() : data_(State::ROWS, std::vector<int8_t>(State::COLS, 0)){}
+// Legacy implementation:
+// State::State() : data_(State::ROWS, std::vector<int8_t>(State::COLS, 0)){}
 // Next implementation:
+State::State() : data_(){}
 // data_ = std::vector<int8_t>(State::ROWS * State::COLS, 0);
 
 State::State(const state_type& data) : data_(data) {}
+State::State(const std::vector<std::vector<int8_t>>& data) {
+    if (data.size() != State::ROWS) {
+        throw std::invalid_argument("Invalid number of rows");
+    }
+    for (const auto& row : data) {
+        if (row.size() != State::COLS) {
+            throw std::invalid_argument("Invalid number of columns");
+        }
+    }
+    // Convert 2D vector to 1D array
+    for (int i = 0; i < State::ROWS; ++i) {
+        int offset = i * State::COLS;
+        std::copy(data[i].begin(), data[i].end(), data_.begin() + offset);
+    }
+}
 
 constexpr size_t State::to_index(int r, int c) {
     // Professional tip: add an assertion here in Debug mode
@@ -103,8 +121,8 @@ inline bool State::shift_up(int i, int j){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int i_rewrite = i; i_rewrite < State::ROWS-1; i_rewrite++) {
-        new_value = this->data_[i_rewrite+1][j];
-        this->data_[i_rewrite][j] = new_value;
+        new_value = (*this)(i_rewrite+1,j);
+        (*this)(i_rewrite,j) = new_value;
         if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
@@ -116,8 +134,8 @@ inline bool State::shift_down(int i, int j){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int i_rewrite = i; i_rewrite > 0; i_rewrite--) {
-        new_value = this->data_[i_rewrite-1][j];
-        this->data_[i_rewrite][j] = new_value;
+        new_value = (*this)(i_rewrite-1,j);
+        (*this)(i_rewrite,j) = new_value;
         if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
@@ -129,8 +147,8 @@ inline bool State::shift_left(int i, int j){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int j_rewrite = j; j_rewrite < State::COLS-1; j_rewrite++) {
-        new_value = this->data_[i][j_rewrite+1];
-        this->data_[i][j_rewrite] = new_value;
+        new_value = (*this)(i,j_rewrite+1);
+        (*this)(i,j_rewrite) = new_value;
         if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end
@@ -142,8 +160,8 @@ inline bool State::shift_right(int i, int j){
     bool moved_non_zero_tile = false;
     int8_t new_value;
     for (int j_rewrite = j; j_rewrite > 0; j_rewrite--) {
-        new_value = this->data_[i][j_rewrite-1];
-        this->data_[i][j_rewrite] = new_value;
+        new_value = (*this)(i,j_rewrite-1);
+        (*this)(i,j_rewrite) = new_value;
         if (new_value!=0) moved_non_zero_tile = true;
     }
     // insert a 0 at the end

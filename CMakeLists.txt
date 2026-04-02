@@ -4,7 +4,8 @@ project(Solved2048 LANGUAGES CXX)
 # Set the board size as a cache variable, allowing users to configure it when invoking CMake
 set(BOARD_SIZE_ROWS 2 CACHE STRING "Number of rows in the 2048 board")
 set(BOARD_SIZE_COLS 3 CACHE STRING "Number of columns in the 2048 board")
-add_definitions(-DBOARD_SIZE_ROWS=${BOARD_SIZE_ROWS} -DBOARD_SIZE_COLS=${BOARD_SIZE_COLS})
+set(WINNING_TILE_POWER 5 CACHE STRING "Power of 2 for the winning tile (e.g., 6 for 64)")
+add_definitions(-DBOARD_SIZE_ROWS=${BOARD_SIZE_ROWS} -DBOARD_SIZE_COLS=${BOARD_SIZE_COLS} -DWINNING_TILE_POWER=${WINNING_TILE_POWER})
 # Export compile commands for clang-tidy and editor tools
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
