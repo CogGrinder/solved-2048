@@ -1,0 +1,32 @@
+name: C++ CI
+on: [push, pull_request]
+
+env:
+  BUILD_TYPE: Release
+  ROWS: 2
+  COLS: 3
+  POWER: 5
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install GoogleTest
+      run: sudo apt-get install libgtest-dev && cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp lib/*.a /usr/lib
+
+    - name: Configure CMake
+      run: >
+        cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+          -DBOARD_SIZE_ROWS=${{ env.ROWS }}
+          -DBOARD_SIZE_COLS=${{ env.COLS }}
+          -DWINNING_TILE_POWER=${{ env.POWER }}
+
+      
+    - name: Build
+      run: cmake --build build --config Release
+
+    - name: Run Tests
+      run: cd build && ctest --output-on-failure

@@ -2,7 +2,7 @@
 
 An optimized C++17 Backwards Induction solver for the game 2048 using Markov Decision Processes.
 Performance
-- 2x3 Board Calculation: 3.0s (previously 12.0s) — 4x Speedup.
+- 2x3 Board Calculation: 0.7s (previously 12.0s) — 1600% Speedup.
 
 
 ## Build Instructions
